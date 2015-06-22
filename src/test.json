@@ -1,0 +1,19 @@
+{
+  "AWS_KEY": "this is a key",
+  "AWS_SECRET": "this is a secret",
+  "AWS_BUCKET": "this is a bucket",
+  "EMAIL": "backups@site.com",
+  "Plans": [
+    {
+      "Name": "MySQL Backup",
+      "Command": "mysqldump -u bob -p password > mysql_backup.sql",
+      "Src": "c:\\mysql_backup.sql",
+      "Output": "main_db_%yyyy_mm_dd%.zip"
+    },
+	{
+      "Name": "Website Backup",
+      "Src": ["c:\\website\\*.html", "C:\\website\\src\\**\\*"],
+      "Output": "website_%yyyy_mm_dd%.zip"
+    }
+  ]
+}
