@@ -23,6 +23,8 @@ SOFTWARE.
 """
 
 import logging
+import os
+import subprocess
 
 required_plan_values = ['Name', 'Src', 'Output']
 optional_plan_values = ['Command']
@@ -51,4 +53,49 @@ class Plan:
             raise Exception('Missing keys from data. See log for details.')
 
     def run(self):
+        """
+            The plan is run in the following order:
+                1) (if applicable) Run the external command provided
+                2) Check source file(s) exist
+                3) Zip source file to destination file
+                4) Upload destination file to S3 bucket
+        """
         logger.info('Running plan "%s"', self.name)
+
+        # 1) (if applicable) Run the external command provided
+        if self.command is not None:
+            self.__run_command()
+
+        # 2) Check the source file(s) exist
+        self.__check_source()
+
+        # 3) Zip the source file to the destination file
+        self.__zip_files()
+
+        # 4) Upload destination file to S3 bucket
+        self.__upload()
+
+    def __run_command(self):
+        logger.info('Executing custom command...')
+
+        try:
+            fnull = open(os.devnull, "w")
+            retcode = subprocess.call(self.command, shell=True, stdout=fnull, stderr=subprocess.STDOUT)
+
+            if retcode != 0:
+                msg = 'Failed with code %d' % retcode
+                logger.error(msg)
+                raise Exception(msg)
+
+        except subprocess.CalledProcessError, e:
+            logger.error('Failed with code %d : %s', e.returncode, e.output)
+            raise
+
+    def __check_source(self):
+        logger.info('Placeholder')
+
+    def __zip_files(self):
+        logger.info('Placeholder')
+
+    def __upload(self):
+        logger.info('Placeholder')

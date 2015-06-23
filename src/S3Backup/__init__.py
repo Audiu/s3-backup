@@ -24,6 +24,8 @@ SOFTWARE.
 
 import logging
 from S3Backup import config_loader
+from time import strftime, gmtime
+import boto.ses
 
 logger = logging.getLogger(name='S3BackupTool')
 
@@ -51,11 +53,44 @@ class S3BackupTool:
 
             try:
                 plan.run()
-                # Send success email here
+                self.__send_status_email(plan, True)
             except Exception, e:
-                # Send failed email here
                 logger.error('Failed to run plan: ', e)
+                self.__send_status_email(plan, False, e)
 
             counter += 1
 
         logger.info('Finished running backup plans')
+
+    def __send_status_email(self, plan, success, exception=None):
+        if self.CONFIGURATION['EMAIL_FROM'] is None or self.CONFIGURATION['EMAIL_TO'] is None:
+            logger.debug('Email not provided, so status update not sent')
+            return
+
+        conn = boto.ses.connect_to_region(
+            self.CONFIGURATION['AWS_REGION'],
+            aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
+            aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
+
+        result = 'SUCCESS'
+        if not success:
+            result = 'FAILURE'
+
+        body = 'The backup plan, %s, run at %s was %s' % (
+            plan.name,
+            strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()),
+            result)
+
+        if exception is not None:
+            body += '\n\nDetailed failure information:\n\n%s' % exception
+
+        try:
+            conn.send_email(
+                self.CONFIGURATION['EMAIL_FROM'],
+                '[S3-Backup] [%s] - Plan: %s' % (result, plan.name),
+                body,
+                [self.CONFIGURATION['EMAIL_TO']])
+        except Exception, e:
+            logger.error('Failed to send email to {0:s} regarding plan: {1:s}'.format(self.CONFIGURATION['EMAIL_TO'],
+                                                                                      plan.name),
+                         e)

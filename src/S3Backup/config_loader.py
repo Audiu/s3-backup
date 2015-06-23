@@ -28,8 +28,8 @@ from S3Backup.plan import Plan
 
 logger = logging.getLogger(name='config_loader')
 
-required_root_values = ['AWS_KEY', 'AWS_SECRET', 'AWS_BUCKET', 'Plans']
-optional_root_values = ['EMAIL']
+required_root_values = ['AWS_KEY', 'AWS_SECRET', 'AWS_BUCKET', 'AWS_REGION', 'Plans']
+optional_root_values = ['EMAIL_FROM', 'EMAIL_TO']
 
 def config_setup(config_file):
     logger.info('Loading: %s', config_file)
@@ -38,7 +38,8 @@ def config_setup(config_file):
         'AWS_KEY': '',
         'AWS_SECRET': '',
         'AWS_BUCKET': '',
-        'EMAIL': None,
+        'EMAIL_FROM': None,
+        'EMAIL_TO': None,
         'Plans': []
     }
 
