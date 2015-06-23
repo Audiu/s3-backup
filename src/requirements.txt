@@ -1,1 +1,3 @@
 boto
+formic==0.9beta8
+ZipFile

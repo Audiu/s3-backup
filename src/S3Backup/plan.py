@@ -25,6 +25,8 @@ SOFTWARE.
 import logging
 import os
 import subprocess
+from zipfile import ZipFile
+import formic
 
 required_plan_values = ['Name', 'Src', 'Output']
 optional_plan_values = ['Command']
@@ -56,9 +58,8 @@ class Plan:
         """
             The plan is run in the following order:
                 1) (if applicable) Run the external command provided
-                2) Check source file(s) exist
-                3) Zip source file to destination file
-                4) Upload destination file to S3 bucket
+                2) Zip source file(s) to destination file
+                3) Upload destination file to S3 bucket
         """
         logger.info('Running plan "%s"', self.name)
 
@@ -66,13 +67,10 @@ class Plan:
         if self.command is not None:
             self.__run_command()
 
-        # 2) Check the source file(s) exist
-        self.__check_source()
-
-        # 3) Zip the source file to the destination file
+        # 2) Zip the source file to the destination file
         self.__zip_files()
 
-        # 4) Upload destination file to S3 bucket
+        # 3) Upload destination file to S3 bucket
         self.__upload()
 
     def __run_command(self):
@@ -83,19 +81,26 @@ class Plan:
             retcode = subprocess.call(self.command, shell=True, stdout=fnull, stderr=subprocess.STDOUT)
 
             if retcode != 0:
-                msg = 'Failed with code %d' % retcode
-                logger.error(msg)
-                raise Exception(msg)
+                raise Exception('Failed with code %d' % retcode)
 
         except subprocess.CalledProcessError, e:
             logger.error('Failed with code %d : %s', e.returncode, e.output)
             raise
 
-    def __check_source(self):
-        logger.info('Placeholder')
-
     def __zip_files(self):
-        logger.info('Placeholder')
+        fileset = formic.FileSet(include=[self.src])
+
+        # Check there are files in the file set
+        if len(fileset.files()) == 0:
+            raise Exception('No input files retrieved from pattern: %s' % self.src)
+
+        with ZipFile(self.output, 'w') as myzip:
+            for file_name in fileset:
+                try:
+                    myzip.write(file_name)
+                except Exception, e:
+                    logger.error('Error while adding file to the archive: %s', file_name)
+                    raise
 
     def __upload(self):
         logger.info('Placeholder')
