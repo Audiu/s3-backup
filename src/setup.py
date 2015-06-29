@@ -29,7 +29,7 @@ version_git = calculate_version()
 
 
 def get_long_description():
-    readme_file = 'README.md'
+    readme_file = '../README.md'
     if not os.path.isfile(readme_file):
         return ''
     # Try to transform the README from Markdown to reStructuredText.
@@ -49,13 +49,13 @@ setup(
     name='S3Backup',
     version=version_git,
     author='Mike Goodfellow',
-    author_email='mike@mikegoodfellow.co.uk',
+    author_email='mdgoodfellow@gmail.com',
     packages=find_packages(),
     url='https://github.com/mgoodfellow/s3-backup',
     license='MIT',
     description='Perform scripted backups to Amazon S3',
     long_description=get_long_description(),
-    zip_safe=True,
+    zip_safe=False,
     install_requires=requirements,
     keywords=['backup', 'aws', 's3'],
 )
