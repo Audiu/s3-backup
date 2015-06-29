@@ -3,18 +3,19 @@
   "AWS_SECRET": "this is a secret",
   "AWS_BUCKET": "this is a bucket",
   "AWS_REGION": "this is a region",
-  "EMAIL": "backups@site.com",
+  "EMAIL_FROM": "source@address.com",
+  "EMAIL_TO": "recipient@address.com",
   "Plans": [
     {
       "Name": "MySQL Backup",
       "Command": "mysqldump -u bob -p password > mysql_backup.sql",
-      "Src": "c:\\mysql_backup.sql",
-      "Output": "main_db.zip"
+      "Src": "c:/mysql_backup.sql",
+      "OutputPrefix": "main_db"
     },
 	{
       "Name": "Website Backup",
-      "Src": ["c:\\website\\*.html", "C:\\website\\src\\**\\*"],
-      "Output": "website.zip"
+      "Src": ["c:/website/*.html", "C:/website/src/**/*"],
+      "OutputPrefix": "website"
     }
   ]
 }

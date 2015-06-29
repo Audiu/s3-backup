@@ -38,10 +38,12 @@ def config_setup(config_file):
         'AWS_KEY': '',
         'AWS_SECRET': '',
         'AWS_BUCKET': '',
+        'AWS_REGION': '',
         'EMAIL_FROM': None,
-        'EMAIL_TO': None,
-        'Plans': []
+        'EMAIL_TO': None
     }
+
+    plans = []
 
     with open(config_file) as json_data_file:
         data = json.load(json_data_file)
@@ -66,15 +68,7 @@ def config_setup(config_file):
     if failed:
         raise Exception('Missing keys from data. See log for details.')
 
-    configuration['Plans'] = load_plans(data['Plans'])
+    for raw_plan in data['Plans']:
+        plans.append(Plan(raw_plan, configuration))
 
-    return configuration
-
-def load_plans(raw_plans):
-
-    plans = []
-
-    for raw_plan in raw_plans:
-        plans.append(Plan(raw_plan))
-
-    return plans
+    return configuration, plans

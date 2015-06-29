@@ -35,7 +35,7 @@ class S3BackupTool:
         logger.info('Initialising...')
 
         try:
-            self.CONFIGURATION = config_loader.config_setup(config_file)
+            self.CONFIGURATION, self.PLANS = config_loader.config_setup(config_file)
         except Exception, e:
             logger.fatal('Failed to load configuration: %s', e)
             raise e
@@ -43,19 +43,19 @@ class S3BackupTool:
         logger.info('Loaded configuration')
 
     def run_plans(self):
-        if len(self.CONFIGURATION['Plans']) == 0:
+        if len(self.PLANS) == 0:
             logger.warn('No plans to execute')
             return
 
         counter = 1
-        for plan in self.CONFIGURATION['Plans']:
-            logger.info('Executing plan %d of %d', counter, len(self.CONFIGURATION['Plans']))
+        for plan in self.PLANS:
+            logger.info('Executing plan %d of %d', counter, len(self.PLANS))
 
             try:
                 plan.run()
                 self.__send_status_email(plan, True)
             except Exception, e:
-                logger.error('Failed to run plan: ', e)
+                logger.error('Failed to run plan: %s', e)
                 self.__send_status_email(plan, False, e)
 
             counter += 1

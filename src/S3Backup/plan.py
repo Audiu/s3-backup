@@ -21,21 +21,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
+from boto.s3.key import Key
+import glob2
 import logging
 import os
 import subprocess
 from zipfile import ZipFile
-import formic
+import time
+import boto.ses
 
-required_plan_values = ['Name', 'Src', 'Output']
+required_plan_values = ['Name', 'Src', 'OutputPrefix']
 optional_plan_values = ['Command']
 
 logger = logging.getLogger(name='Plan')
 
 class Plan:
 
-    def __init__(self, raw_plan):
+    def __init__(self, raw_plan, configuration):
         failed = False
 
         for required_value in required_plan_values:
@@ -43,10 +45,12 @@ class Plan:
                 failed = True
                 logger.error('Missing plan configuration value: %s', required_value)
 
+        self.CONFIGURATION = configuration
+
         self.name = raw_plan['Name']
         self.src = raw_plan['Src']
-        self.output = raw_plan['Output']
         self.command = None
+        self.output_file = '%s_%s.zip' % (raw_plan['OutputPrefix'], time.strftime("%Y-%m-%d_%H-%M-%S"))
 
         if 'Command' in raw_plan:
             self.command = raw_plan['Command']
@@ -71,7 +75,10 @@ class Plan:
         self.__zip_files()
 
         # 3) Upload destination file to S3 bucket
-        self.__upload()
+        try:
+            self.__upload()
+        finally:
+            self.__cleanup()
 
     def __run_command(self):
         logger.info('Executing custom command...')
@@ -88,19 +95,52 @@ class Plan:
             raise
 
     def __zip_files(self):
-        fileset = formic.FileSet(include=[self.src])
+        fileset = []
+        if isinstance(self.src, list):
+            for src_path in self.src:
+                for filename in glob2.glob(os.path.normpath(src_path)):
+                    fileset.append(filename)
+        else:
+            for filename in glob2.glob(os.path.normpath(self.src)):
+                fileset.append(filename)
 
         # Check there are files in the file set
-        if len(fileset.files()) == 0:
+        if len(fileset) == 0:
             raise Exception('No input files retrieved from pattern: %s' % self.src)
 
-        with ZipFile(self.output, 'w') as myzip:
+        logger.info('Outputting to %s', self.output_file)
+
+        with ZipFile(self.output_file, 'w') as myzip:
             for file_name in fileset:
                 try:
+                    logger.debug('Adding: %s', file_name)
                     myzip.write(file_name)
                 except Exception, e:
-                    logger.error('Error while adding file to the archive: %s', file_name)
+                    logger.error('Error while adding file to the archive: %s - %s', file_name, e)
                     raise
 
+        logger.info('Output file created')
+
     def __upload(self):
-        logger.info('Placeholder')
+        try:
+            conn = boto.s3.connect_to_region(
+                self.CONFIGURATION['AWS_REGION'],
+                aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
+                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
+
+            bucket = conn.get_bucket(self.CONFIGURATION['AWS_BUCKET'])
+
+            key = Key(bucket)
+            key.key = self.output_file
+            key.set_contents_from_filename(self.output_file)
+        except Exception, e:
+            logger.error('Failed to upload backup file to S3: %s', e)
+            raise
+
+    def __cleanup(self):
+        logger.info('Cleaning up temporary file: %s', self.output_file)
+        try:
+            if os.path.isfile(self.output_file):
+                os.remove(self.output_file)
+        except Exception, e:
+            logger.error('Failed to remove temporary file: %s', e)
