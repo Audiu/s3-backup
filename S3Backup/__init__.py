@@ -31,7 +31,7 @@ logger = logging.getLogger(name='S3BackupTool')
 
 class S3BackupTool:
 
-    def __init__(self, config_file="config.json", log_file="s3backup.log"):
+    def __init__(self, config_file="config.json"):
         logger.info('Initialising...')
 
         try:
@@ -52,17 +52,42 @@ class S3BackupTool:
             logger.info('Executing plan %d of %d', counter, len(self.PLANS))
 
             try:
-                plan.run()
-                self.__send_status_email(plan, True)
+                updated, output_file = plan.run()
+                self.__send_success_email(plan, updated, output_file)
             except Exception, e:
                 logger.error('Failed to run plan: %s', e)
-                self.__send_status_email(plan, False, e)
+                self.__send_failure_email(plan, e)
 
             counter += 1
 
         logger.info('Finished running backup plans')
 
-    def __send_status_email(self, plan, success, exception=None):
+    def __send_success_email(self, plan, updated, output_file):
+        subject = '[S3-Backup] [SUCCESS] - Plan: %s' % plan.name
+
+        body = 'The backup plan, %s, run at %s was SUCCESSFUL\n\n' % (
+            plan.name,
+            strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
+
+        if updated:
+            body += 'The backup set had changed, so a new backup was uploaded: %s' % output_file
+        else:
+            body += 'The backup set had not changed. No new backup uploaded'
+
+        self.__send_status_email(subject, body)
+
+    def __send_failure_email(self, plan, exception):
+        subject = '[S3-Backup] [FAILURE] - Plan: %s' % plan.name
+
+        body = 'The backup plan, %s, run at %s was a FAILURE\n\n' % (
+            plan.name,
+            strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
+
+        body += '\n\nDetailed failure information:\n\n%s' % exception
+
+        self.__send_status_email(subject, body)
+
+    def __send_status_email(self, subject, body):
         if self.CONFIGURATION['EMAIL_FROM'] is None or self.CONFIGURATION['EMAIL_TO'] is None:
             logger.debug('Email not provided, so status update not sent')
             return
@@ -72,25 +97,13 @@ class S3BackupTool:
             aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
             aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
 
-        result = 'SUCCESS'
-        if not success:
-            result = 'FAILURE'
-
-        body = 'The backup plan, %s, run at %s was %s' % (
-            plan.name,
-            strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()),
-            result)
-
-        if exception is not None:
-            body += '\n\nDetailed failure information:\n\n%s' % exception
-
         try:
             conn.send_email(
                 self.CONFIGURATION['EMAIL_FROM'],
-                '[S3-Backup] [%s] - Plan: %s' % (result, plan.name),
+                subject,
                 body,
                 [self.CONFIGURATION['EMAIL_TO']])
         except Exception, e:
-            logger.error('Failed to send email to {0:s} regarding plan: {1:s}'.format(self.CONFIGURATION['EMAIL_TO'],
-                                                                                      plan.name),
+            logger.error('Failed to send email to {0:s} with subject {1:s}'.format(self.CONFIGURATION['EMAIL_TO'],
+                                                                                   subject),
                          e)

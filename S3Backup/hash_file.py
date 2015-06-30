@@ -20,6 +20,14 @@ def find_hash(hash_file, plan_name):
 def update_hash(hash_file, plan_name, hash_value):
     # Do the update (create the file if it doesn't exist)
     filename = os.path.normpath(hash_file)
+
+    # If it doesn't exist, we shortcut this
+    if not os.path.isfile(hash_file):
+        with open(hash_file, 'w') as new_file:
+            new_file.write('%s=%s\n' % (plan_name, hash_value))
+        return
+
+    # Otherwise, we need to rebuild the file
     fh, abs_path = mkstemp()
     is_written = False
 
@@ -30,22 +38,21 @@ def update_hash(hash_file, plan_name, hash_value):
                 parts = line.strip().split('=')
                 if parts[0] == plan_name:
                     is_written = True
-                    new_file.write('%s=%s' % (plan_name, hash_value))
+                    new_file.write('%s=%s\n' % (plan_name, hash_value))
                 else:
                     new_file.write(line)
 
             # If the hash wasn't already in the file
             if not is_written:
-                new_file.write('%s=%s' % (plan_name, hash_value))
+                new_file.write('%s=%s\n' % (plan_name, hash_value))
 
-    fh.close()
+    os.close(fh)
 
-    #Remove original file
+    # Remove original file
     os.remove(hash_file)
 
-    #Move new file
+    # Move new file
     move(abs_path, hash_file)
-
 
 def calc_hash(filename):
     hasher = hashlib.md5()

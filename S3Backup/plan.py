@@ -79,6 +79,8 @@ class Plan:
         # 2) Zip the source file to the destination file
         self.__zip_files()
 
+        updated = False
+
         try:
             # 3) Perform hash check to see if there are any changes (which would require an upload)
             if not self.__hash_check():
@@ -88,8 +90,12 @@ class Plan:
                 # 5) Update hash file with new hash
                 self.__update_hash()
 
+                updated = True
+
         finally:
             self.__cleanup()
+
+        return updated, self.output_file
 
     def __run_command(self):
         logger.info('Executing custom command...')
@@ -152,10 +158,9 @@ class Plan:
         previous_hash = hash_file.find_hash(self.CONFIGURATION['HASH_CHECK_FILE'], self.name)
 
         if previous_hash is None:
-            logger.info('No previous hash found for plan %s', self.name)
-            return False
-
-        logger.debug('Got a previous hash for plan %s of %s', self.name, previous_hash)
+            logger.debug('No previous hash found for plan %s', self.name)
+        else:
+            logger.debug('Got a previous hash for plan %s of %s', self.name, previous_hash)
 
         self.new_hash = hash_file.calc_hash(self.output_file)
 

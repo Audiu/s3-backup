@@ -17,6 +17,7 @@ It supports the following features:
 -  Plan based backups
 -  Custom command run pre-backup
 -  Storing to S3
+-  Calculating MD5 hashes of the backup set to avoid uploading duplicate backup sets
 -  Emailing the result of the backup plans
 -  Python standard logging framework
 
@@ -54,6 +55,7 @@ file
       "AWS_REGION": "this is a region",
       "EMAIL_FROM": "source@address.com",
       "EMAIL_TO": "recipient@address.com",
+      "HASH_CHECK_FILE": "plan_hashes.txt",
       "Plans": [
         {
           "Name": "MySQL Backup",
@@ -108,7 +110,28 @@ Run the backup tool using the following method:
 
     s3backup.run_plans()
 
-See ``test.py`` in the ``src`` folder for an example.
+See ``test.py`` for an example.
+
+File Hashing
+------------
+
+After a backup set is created an MD5 hash is calculated for it. This is then compared against a previously calculated
+hash for that particular plan name.
+
+**NOTE:** Do not change the generated HASH_CHECK_FILE!
+
+Finally, be aware of a "gotcha" - the hashes are keyed on the *plan name* - therefore changing the plan name will
+cause the backup script to think it needs to upload a new backup set.
+
+Emails
+------
+
+An email will be sent after each plan runs. The email will either report a success or a failure. In the event
+of a success, it will be reported if there was a new uploaded backup set (and the file name), otherwise it will
+state that no changes were detected and no upload was made.
+
+If there was a failure while running the backup, the exception message will be emailed, and the logs can be
+referred to for further information.
 
 Future Improvements
 -------------------
@@ -116,3 +139,5 @@ Future Improvements
 These are some of the planned future improvements:
 
 -  Run multiple pre-backup commands (by providing an array)
+-  Allow custom format strings for the output files (instead of the default date/time format)
+-  Modification of the glob2 library to allow hidden files to be included
