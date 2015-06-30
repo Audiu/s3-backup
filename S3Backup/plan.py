@@ -29,6 +29,7 @@ import subprocess
 from zipfile import ZipFile
 import time
 import boto.ses
+from S3Backup import hash_file
 
 required_plan_values = ['Name', 'Src', 'OutputPrefix']
 optional_plan_values = ['Command']
@@ -52,6 +53,8 @@ class Plan:
         self.command = None
         self.output_file = '%s_%s.zip' % (raw_plan['OutputPrefix'], time.strftime("%Y-%m-%d_%H-%M-%S"))
 
+        self.new_hash = None
+
         if 'Command' in raw_plan:
             self.command = raw_plan['Command']
 
@@ -63,7 +66,9 @@ class Plan:
             The plan is run in the following order:
                 1) (if applicable) Run the external command provided
                 2) Zip source file(s) to destination file
-                3) Upload destination file to S3 bucket
+                3) Perform hash check to see if there are any changes (which would require an upload)
+                4) Upload destination file to S3 bucket
+                5) Update hash file with new hash
         """
         logger.info('Running plan "%s"', self.name)
 
@@ -74,9 +79,15 @@ class Plan:
         # 2) Zip the source file to the destination file
         self.__zip_files()
 
-        # 3) Upload destination file to S3 bucket
         try:
-            self.__upload()
+            # 3) Perform hash check to see if there are any changes (which would require an upload)
+            if not self.__hash_check():
+                # 4) Upload destination file to S3 bucket
+                self.__upload()
+
+                # 5) Update hash file with new hash
+                self.__update_hash()
+
         finally:
             self.__cleanup()
 
@@ -136,6 +147,28 @@ class Plan:
         except Exception, e:
             logger.error('Failed to upload backup file to S3: %s', e)
             raise
+
+    def __hash_check(self):
+        previous_hash = hash_file.find_hash(self.CONFIGURATION['HASH_CHECK_FILE'], self.name)
+
+        if previous_hash is None:
+            logger.info('No previous hash found for plan %s', self.name)
+            return False
+
+        logger.debug('Got a previous hash for plan %s of %s', self.name, previous_hash)
+
+        self.new_hash = hash_file.calc_hash(self.output_file)
+
+        logger.debug('New hash for plan %s of %s', self.name, self.new_hash)
+
+        return previous_hash == self.new_hash
+
+    def __update_hash(self):
+        if self.new_hash is None:
+            logger.error('Could not update hash as no hash was found')
+            return
+
+        hash_file.update_hash(self.CONFIGURATION['HASH_CHECK_FILE'], self.name, self.new_hash)
 
     def __cleanup(self):
         logger.info('Cleaning up temporary file: %s', self.output_file)

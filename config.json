@@ -5,6 +5,7 @@
   "AWS_REGION": "this is a region",
   "EMAIL_FROM": "source@address.com",
   "EMAIL_TO": "recipient@address.com",
+  "HASH_CHECK_FILE": "plan_output_hashes.txt",
   "Plans": [
     {
       "Name": "MySQL Backup",
