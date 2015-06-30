@@ -20,6 +20,25 @@ It supports the following features:
 -  Emailing the result of the backup plans
 -  Python standard logging framework
 
+Installation
+------------
+
+Install using ``pip``:
+
+::
+
+    pip install s3backup
+
+Dependencies
+------------
+
+S3Backup depends on:
+
+- boto (AWS SDK)
+- glob2 (Better file globbing)
+
+Both can be installed via pip, however, if S3Backup is installed via pip then these dependencies will already be met.
+
 Configuration
 -------------
 
