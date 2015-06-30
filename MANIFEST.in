@@ -1,1 +1,2 @@
 include AUTHORS README.rst LICENSE requirements.txt version.py
+recursive-include S3Backup *.py

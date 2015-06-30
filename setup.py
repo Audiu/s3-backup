@@ -32,7 +32,7 @@ setup(
     version=version_git,
     author='Mike Goodfellow',
     author_email='mdgoodfellow@gmail.com',
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests', 'tests.*']),
     url='https://github.com/mgoodfellow/s3-backup',
     license='MIT',
     description='Perform scripted backups to Amazon S3',
