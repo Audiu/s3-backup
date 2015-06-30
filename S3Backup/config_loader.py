@@ -28,7 +28,7 @@ from S3Backup.plan import Plan
 
 logger = logging.getLogger(name='config_loader')
 
-required_root_values = ['AWS_KEY', 'AWS_SECRET', 'AWS_BUCKET', 'AWS_REGION', 'Plans']
+required_root_values = ['AWS_KEY', 'AWS_SECRET', 'AWS_BUCKET', 'AWS_REGION', 'HASH_CHECK_FILE', 'Plans']
 optional_root_values = ['EMAIL_FROM', 'EMAIL_TO']
 
 def config_setup(config_file):
@@ -39,6 +39,7 @@ def config_setup(config_file):
         'AWS_SECRET': '',
         'AWS_BUCKET': '',
         'AWS_REGION': '',
+        'HASH_CHECK_FILE': '',
         'EMAIL_FROM': None,
         'EMAIL_TO': None
     }
