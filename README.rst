@@ -141,3 +141,4 @@ These are some of the planned future improvements:
 -  Run multiple pre-backup commands (by providing an array)
 -  Allow custom format strings for the output files (instead of the default date/time format)
 -  Modification of the glob2 library to allow hidden files to be included
+-  Allow exclude globs to be added when providing source directory
