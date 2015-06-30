@@ -3,7 +3,6 @@
 from setuptools import setup, find_packages
 import os
 import subprocess
-from setuptools.command import easy_install
 
 def parse_requirements(filename):
     return list(filter(lambda line: (line.strip())[0] != '#',
@@ -28,23 +27,6 @@ requirements = parse_requirements('requirements.txt')
 version_git = calculate_version()
 
 
-def get_long_description():
-    readme_file = '../README.md'
-    if not os.path.isfile(readme_file):
-        return ''
-    # Try to transform the README from Markdown to reStructuredText.
-    try:
-        easy_install.main(['-U', 'pyandoc==0.0.1'])
-        import pandoc
-        pandoc.core.PANDOC_PATH = 'pandoc'
-        doc = pandoc.Document()
-        doc.markdown = open(readme_file).read()
-        description = doc.rst
-    except Exception:
-        description = open(readme_file).read()
-    return description
-
-
 setup(
     name='S3Backup',
     version=version_git,
@@ -54,7 +36,7 @@ setup(
     url='https://github.com/mgoodfellow/s3-backup',
     license='MIT',
     description='Perform scripted backups to Amazon S3',
-    long_description=get_long_description(),
+    long_description=open('README.rst').read(),
     zip_safe=False,
     install_requires=requirements,
     keywords=['backup', 'aws', 's3'],
