@@ -1,3 +1,2 @@
 boto
-ZipFile
 glob2
