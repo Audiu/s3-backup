@@ -15,7 +15,7 @@ Features
 It supports the following features:
 
 -  Plan based backups
--  Custom command run pre-backup
+-  Custom command run pre-backup (can be used to perform complex pre-backup preparation tasks)
 -  Storing to S3
 -  Calculating MD5 hashes of the backup set to avoid uploading duplicate backup sets
 -  Emailing the result of the backup plans
@@ -36,7 +36,7 @@ Dependencies
 S3Backup depends on:
 
 - boto (AWS SDK)
-- glob2 (Better file globbing)
+- `glob2 <http://github.com/miracle2k/python-glob2/>`_ (Better file globbing)
 
 Both can be installed via pip, however, if S3Backup is installed via pip then these dependencies will already be met.
 
@@ -59,14 +59,14 @@ file
       "Plans": [
         {
           "Name": "MySQL Backup",
-          "Command": "mysqldump -u bob -p password > mysql_backup.sql",
-          "Src": "c:/mysql_backup.sql",
+          "Command": "/home/bob/backups/backup-prep-script.sh",
+          "Src": "/home/bob/backups/database/mysql_backup.sql",
           "OutputPrefix": "main_db"
         },
         {
-          "Name": "Website Backup",
-          "Src": ["c:/website/*.html", "C:/website/src/**/*"],
-          "OutputPrefix": "website"
+          "Name": "Websites Backup",
+          "Src": ["/var/www/html/website/**/*", "/var/www/html/website2/**/*"],
+          "OutputPrefix": "websites_backup"
         }
       ]
     }
@@ -78,6 +78,9 @@ If emails are not required, then omit the ``EMAIL_FROM`` and
 slashes (/) as then escaping isn’t required (as with backslashes). The
 script will normalize the paths in these cases. However, when providing
 the command, if paths are required they will need to be double escaped.
+
+There are more examples (including Windows examples) and further discussion
+on `this blog post <https://mikegoodfellow.co.uk/s3-backup-utility/>`_
 
 Usage
 -----
@@ -138,7 +141,6 @@ Future Improvements
 
 These are some of the planned future improvements:
 
--  Run multiple pre-backup commands (by providing an array)
 -  Allow custom format strings for the output files (instead of the default date/time format)
 -  Modification of the glob2 library to allow hidden files to be included
 -  Allow exclude globs to be added when providing source directory
