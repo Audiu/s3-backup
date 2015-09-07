@@ -61,7 +61,8 @@ file
           "Name": "MySQL Backup",
           "Command": "/home/bob/backups/backup-prep-script.sh",
           "Src": "/home/bob/backups/database/mysql_backup.sql",
-          "OutputPrefix": "main_db"
+          "OutputPrefix": "main_db",
+          "PreviousBackupsCount": 2
         },
         {
           "Name": "Websites Backup",
@@ -73,6 +74,9 @@ file
 
 If emails are not required, then omit the ``EMAIL_FROM`` and
 ``EMAIL_TO`` fields of the configuration file.
+
+If the ``PreviousBackupsCount`` is not set, then it will default to keeping
+1 previous backup. It can be set to 0, which will only keep the current backup.
 
 *Note*: When on Windows, it is better to pass the paths using forward
 slashes (/) as then escaping isn’t required (as with backslashes). The

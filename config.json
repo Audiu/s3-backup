@@ -11,7 +11,8 @@
       "Name": "MySQL Backup",
       "Command": "mysqldump -u bob -p password > mysql_backup.sql",
       "Src": "c:/mysql_backup.sql",
-      "OutputPrefix": "main_db"
+      "OutputPrefix": "main_db",
+      "PreviousBackupsCount": 2
     },
 	{
       "Name": "Website Backup",

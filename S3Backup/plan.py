@@ -32,7 +32,7 @@ import boto.ses
 from S3Backup import hash_file
 
 required_plan_values = ['Name', 'Src', 'OutputPrefix']
-optional_plan_values = ['Command']
+optional_plan_values = ['Command', 'PreviousBackupsCount']
 
 logger = logging.getLogger(name='Plan')
 
@@ -51,6 +51,13 @@ class Plan:
         self.name = raw_plan['Name']
         self.src = raw_plan['Src']
         self.command = None
+
+        if 'PreviousBackupsCount' in raw_plan:
+            self.previous_backups_count = int(raw_plan['PreviousBackupsCount'])
+        else:
+            self.previous_backups_count = 1
+
+        self.output_file_prefix = raw_plan['OutputPrefix']
         self.output_file = '%s_%s.zip' % (raw_plan['OutputPrefix'], time.strftime("%Y-%m-%d_%H-%M-%S"))
 
         self.new_hash = None
@@ -69,6 +76,7 @@ class Plan:
                 3) Perform hash check to see if there are any changes (which would require an upload)
                 4) Upload destination file to S3 bucket
                 5) Update hash file with new hash
+                6) Check if any previous backups need removing
         """
         logger.info('Running plan "%s"', self.name)
 
@@ -91,6 +99,9 @@ class Plan:
                 self.__update_hash()
 
                 updated = True
+
+            # 6) Remove any previous backups if required
+            self.__clear_old_backups()
 
         finally:
             self.__cleanup()
@@ -137,6 +148,40 @@ class Plan:
                     raise
 
         logger.info('Output file created')
+
+    def __clear_old_backups(self):
+        try:
+            conn = boto.s3.connect_to_region(
+                self.CONFIGURATION['AWS_REGION'],
+                aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
+                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
+
+            bucket = conn.get_bucket(self.CONFIGURATION['AWS_BUCKET'])
+
+            backup_keys = []
+
+            for key in bucket.list(prefix=self.output_file_prefix):
+                backup_keys.append(key.name)
+
+            backup_keys.sort()
+
+            logger.info('There are %d previous backups', len(backup_keys))
+
+            max_backups = self.previous_backups_count + 1   # Because this is run after current backup uploaded
+
+            if len(backup_keys) > max_backups:
+                backups_to_remove = len(backup_keys) - max_backups
+                logger.info('Removing %d previous backups', backups_to_remove)
+
+                for i in range(backups_to_remove):
+                    logger.info('Removing previous backup: %s', backup_keys[i])
+                    bucket.delete_key(backup_keys[i])
+            else:
+                logger.info('No previous backups require removal')
+
+        except Exception, e:
+            logger.error('Failed to clear out previous backups from S3: %s', e)
+            raise
 
     def __upload(self):
         try:
