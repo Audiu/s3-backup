@@ -98,10 +98,10 @@ class Plan:
                 # 5) Update hash file with new hash
                 self.__update_hash()
 
-                # 6) Remove any previous backups if required
-                self.__clear_old_backups()
-
                 updated = True
+
+            # 6) Remove any previous backups if required
+            self.__clear_old_backups()
 
         finally:
             self.__cleanup()
@@ -158,23 +158,24 @@ class Plan:
 
             bucket = conn.get_bucket(self.CONFIGURATION['AWS_BUCKET'])
 
-            backups = []
+            backup_keys = []
 
             for key in bucket.list(prefix=self.output_file_prefix):
-                backups.append(key.name)
+                backup_keys.append(key.name)
 
-            backups.sort()
+            backup_keys.sort()
 
-            logger.info('There are %d previous backups', len(backups))
+            logger.info('There are %d previous backups', len(backup_keys))
 
             max_backups = self.previous_backups_count + 1   # Because this is run after current backup uploaded
 
-            if len(backups) > max_backups:
-                logger.info('Removing %d previous backups', len(backups) - max_backups)
+            if len(backup_keys) > max_backups:
+                backups_to_remove = len(backup_keys) - max_backups
+                logger.info('Removing %d previous backups', backups_to_remove)
 
-                for key in backups:
-                    logger.info('Removing previous backup: %s', key)
-                    bucket.delete_key(key)
+                for i in range(backups_to_remove):
+                    logger.info('Removing previous backup: %s', backup_keys[i])
+                    bucket.delete_key(backup_keys[i])
             else:
                 logger.info('No previous backups require removal')
 
