@@ -48,7 +48,6 @@ def config_setup(config_file):
 
     with open(config_file) as json_data_file:
         data = json.load(json_data_file)
-    print(data)
 
     failed = False
 
@@ -63,8 +62,6 @@ def config_setup(config_file):
     for optional_value in optional_root_values:
         if optional_value in data:
             configuration[optional_value] = data[optional_value]
-
-    print(configuration)
 
     if failed:
         raise Exception('Missing keys from data. See log for details.')
