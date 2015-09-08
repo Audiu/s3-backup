@@ -30,6 +30,7 @@ from zipfile import ZipFile
 import time
 import boto.ses
 from S3Backup import hash_file
+from S3Backup.ConfigException import ConfigException
 
 required_plan_values = ['Name', 'Src', 'OutputPrefix']
 optional_plan_values = ['Command', 'PreviousBackupsCount']
@@ -66,7 +67,7 @@ class Plan:
             self.command = raw_plan['Command']
 
         if failed:
-            raise Exception('Missing keys from data. See log for details.')
+            raise ConfigException('Missing keys from data. See log for details.')
 
     def run(self):
         """

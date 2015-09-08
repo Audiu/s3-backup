@@ -24,6 +24,7 @@ SOFTWARE.
 
 import json
 import logging
+from S3Backup.ConfigException import ConfigException
 from S3Backup.plan import Plan
 
 logger = logging.getLogger(name='config_loader')
@@ -64,7 +65,7 @@ def config_setup(config_file):
             configuration[optional_value] = data[optional_value]
 
     if failed:
-        raise Exception('Missing keys from data. See log for details.')
+        raise ConfigException('Missing keys from data. See log for details.')
 
     for raw_plan in data['Plans']:
         plans.append(Plan(raw_plan, configuration))

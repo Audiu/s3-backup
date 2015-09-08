@@ -1,0 +1,22 @@
+{
+  "AWS_KEY": "this is a key",
+  "AWS_SECRET": "this is a secret",
+  "AWS_BUCKET": "this is a bucket",
+  "AWS_REGION": "this is a region",
+  "EMAIL_TO": "recipient@address.com",
+  "HASH_CHECK_FILE": "plan_hashes.txt",
+  "Plans": [
+    {
+      "Name": "MySQL Backup",
+      "Command": "mysqldump -u bob -p password > mysql_backup.sql",
+      "Src": "c:/mysql_backup.sql",
+      "OutputPrefix": "main_db",
+      "PreviousBackupsCount": 2
+    },
+	{
+      "Name": "Website Backup",
+      "Src": ["c:/website/*.html", "C:/website/src/**/*"],
+      "OutputPrefix": "website"
+    }
+  ]
+}
