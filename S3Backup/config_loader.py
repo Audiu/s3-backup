@@ -24,7 +24,7 @@ SOFTWARE.
 
 import json
 import logging
-from S3Backup.ConfigException import ConfigException
+from S3Backup.config_exception import ConfigException
 from S3Backup.plan import Plan
 
 logger = logging.getLogger(name='config_loader')

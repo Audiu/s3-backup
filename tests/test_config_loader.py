@@ -1,7 +1,7 @@
 import os
 from nose.tools import raises, assert_true, assert_equals
 from S3Backup import config_loader
-from S3Backup.ConfigException import ConfigException
+from S3Backup.config_exception import ConfigException
 from S3Backup.plan import Plan
 
 
