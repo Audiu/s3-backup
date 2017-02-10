@@ -32,7 +32,7 @@ import boto.ses
 from S3Backup import hash_file
 
 required_plan_values = ['Name', 'Src', 'OutputPrefix']
-optional_plan_values = ['Command', 'PreviousBackupsCount']
+optional_plan_values = ['Command', 'PreviousBackupsCount', 'Zip64']
 
 logger = logging.getLogger(name='Plan')
 
@@ -56,6 +56,11 @@ class Plan:
             self.previous_backups_count = int(raw_plan['PreviousBackupsCount'])
         else:
             self.previous_backups_count = 1
+
+        if 'Zip64' in raw_plan:
+            self.zip64 = bool(raw_plan['Zip64'])
+        else:
+            self.zip64 = True
 
         self.output_file_prefix = raw_plan['OutputPrefix']
         self.output_file = '%s_%s.zip' % (raw_plan['OutputPrefix'], time.strftime("%Y-%m-%d_%H-%M-%S"))
@@ -138,7 +143,7 @@ class Plan:
 
         logger.info('Outputting to %s', self.output_file)
 
-        with ZipFile(self.output_file, 'w') as myzip:
+        with ZipFile(self.output_file, 'w', allowZip64=self.zip64) as myzip:
             for file_name in fileset:
                 try:
                     logger.debug('Adding: %s', file_name)
