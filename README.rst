@@ -62,7 +62,8 @@ file
           "Command": "/home/bob/backups/backup-prep-script.sh",
           "Src": "/home/bob/backups/database/mysql_backup.sql",
           "OutputPrefix": "main_db",
-          "PreviousBackupsCount": 2
+          "PreviousBackupsCount": 2,
+          "Zip64": false
         },
         {
           "Name": "Websites Backup",
@@ -77,6 +78,10 @@ If emails are not required, then omit the ``EMAIL_FROM`` and
 
 If the ``PreviousBackupsCount`` is not set, then it will default to keeping
 1 previous backup. It can be set to 0, which will only keep the current backup.
+
+If the ``Zip64`` is not set, then it will default to ``true``. This allows for
+Zip files > 2GB to be created. If running on a old environment this might need to
+be forced to false.
 
 *Note*: When on Windows, it is better to pass the paths using forward
 slashes (/) as then escaping isn’t required (as with backslashes). The
