@@ -138,7 +138,7 @@ class Plan:
 
         logger.info('Outputting to %s', self.output_file)
 
-        with ZipFile(self.output_file, 'w') as myzip:
+        with ZipFile(self.output_file, 'w', allowZip64=True) as myzip:
             for file_name in fileset:
                 try:
                     logger.debug('Adding: %s', file_name)
