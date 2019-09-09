@@ -21,14 +21,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from boto.s3.key import Key
+from boto3
 import glob2
 import logging
 import os
 import subprocess
 from zipfile import ZipFile
 import time
-import boto.ses
 from S3Backup import hash_file
 
 required_plan_values = ['Name', 'Src', 'OutputPrefix']
@@ -190,16 +189,19 @@ class Plan:
 
     def __upload(self):
         try:
-            conn = boto.s3.connect_to_region(
-                self.CONFIGURATION['AWS_REGION'],
+            s3_client = boto3.client(
+                's3',
+                region_name=self.CONFIGURATION['AWS_REGION'],
                 aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
-                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
+                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET']
+            )
 
-            bucket = conn.get_bucket(self.CONFIGURATION['AWS_BUCKET'])
+            tc = boto3.s3.transfer.TransferConfig()
+            t = boto3.s3.transfer.S3Transfer(client=s3_client,
+                                             config=tc)
 
-            key = Key(bucket)
-            key.key = self.output_file
-            key.set_contents_from_filename(self.output_file)
+            t.upload_file(self.output_file, self.CONFIGURATION['AWS_BUCKET'], self.output_file)
+
         except Exception as e:
             logger.error('Failed to upload backup file to S3: %s', e)
             raise
