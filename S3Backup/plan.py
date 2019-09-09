@@ -117,8 +117,15 @@ class Plan:
         logger.info('Executing custom command...')
 
         try:
+            base_dir = os.path.dirname(__file__)
+            command_path = os.path.join(base_dir, self.command)
+
+            logger.info('Executing %s', command_path)
+
             fnull = open(os.devnull, "w")
-            retcode = subprocess.call(self.command, shell=True, stdout=fnull, stderr=subprocess.STDOUT)
+            retcode = subprocess.call(command_path, shell=True, stdout=fnull, stderr=subprocess.STDOUT)
+
+            logger.info('Process returned code %d', retcode)
 
             if retcode != 0:
                 raise Exception('Failed with code %d' % retcode)
@@ -129,12 +136,15 @@ class Plan:
 
     def __zip_files(self):
         fileset = []
+
+        base_dir = os.path.dirname(__file__)
+
         if isinstance(self.src, list):
             for src_path in self.src:
-                for filename in glob2.glob(os.path.normpath(src_path)):
+                for filename in glob2.glob(os.path.normpath(os.path.join(base_dir, src_path))):
                     fileset.append(filename)
         else:
-            for filename in glob2.glob(os.path.normpath(self.src)):
+            for filename in glob2.glob(os.path.normpath(os.path.join(base_dir, self.src))):
                 fileset.append(filename)
 
         # Check there are files in the file set
