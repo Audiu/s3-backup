@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from boto3
+import boto3
 import glob2
 import logging
 import os
@@ -34,6 +34,7 @@ required_plan_values = ['Name', 'Src', 'OutputPrefix']
 optional_plan_values = ['Command', 'PreviousBackupsCount', 'Zip64']
 
 logger = logging.getLogger(name='Plan')
+
 
 class Plan:
 
@@ -155,23 +156,24 @@ class Plan:
 
     def __clear_old_backups(self):
         try:
-            conn = boto.s3.connect_to_region(
-                self.CONFIGURATION['AWS_REGION'],
+            s3_client = boto3.client(
+                's3',
+                region_name=self.CONFIGURATION['AWS_REGION'],
                 aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
-                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
-
-            bucket = conn.get_bucket(self.CONFIGURATION['AWS_BUCKET'])
+                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET']
+            )
 
             backup_keys = []
 
-            for key in bucket.list(prefix=self.output_file_prefix):
-                backup_keys.append(key.name)
+            for key in s3_client.list_objects(Bucket=self.CONFIGURATION['AWS_BUCKET'],
+                                              Prefix=self.output_file_prefix)['Contents']:
+                backup_keys.append(key['Key'])
 
             backup_keys.sort()
 
             logger.info('There are %d previous backups', len(backup_keys))
 
-            max_backups = self.previous_backups_count + 1   # Because this is run after current backup uploaded
+            max_backups = self.previous_backups_count + 1  # Because this is run after current backup uploaded
 
             if len(backup_keys) > max_backups:
                 backups_to_remove = len(backup_keys) - max_backups
@@ -179,7 +181,7 @@ class Plan:
 
                 for i in range(backups_to_remove):
                     logger.info('Removing previous backup: %s', backup_keys[i])
-                    bucket.delete_key(backup_keys[i])
+                    s3_client.delete_object(Bucket=self.CONFIGURATION['AWS_BUCKET'], Key=backup_keys[i])
             else:
                 logger.info('No previous backups require removal')
 
