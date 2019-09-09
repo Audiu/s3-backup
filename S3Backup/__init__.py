@@ -25,9 +25,10 @@ SOFTWARE.
 import logging
 from S3Backup import config_loader
 from time import strftime, gmtime
-import boto.ses
+import boto3
 
 logger = logging.getLogger(name='S3BackupTool')
+
 
 class S3BackupTool:
 
@@ -92,17 +93,39 @@ class S3BackupTool:
             logger.debug('Email not provided, so status update not sent')
             return
 
-        conn = boto.ses.connect_to_region(
-            self.CONFIGURATION['AWS_REGION'],
+        ses_client = boto3.client(
+            'ses',
+            region_name=self.CONFIGURATION['AWS_REGION'],
             aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
-            aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
+            aws_secret_access_key=self.CONFIGURATION['AWS_SECRET']
+        )
 
         try:
-            conn.send_email(
-                self.CONFIGURATION['EMAIL_FROM'],
-                subject,
-                body,
-                [self.CONFIGURATION['EMAIL_TO']])
+            response = ses_client.send_email(
+                Source=self.CONFIGURATION['EMAIL_FROM'],
+                Destination={
+                    'ToAddresses': [self.CONFIGURATION['EMAIL_TO']]
+                },
+                Message={
+                    'Subject': {
+                        'Data': subject,
+                        'Charset': 'UTF-8'
+                    },
+                    'Body': {
+                        'Text': {
+                            'Data': body,
+                            'Charset': 'UTF-8'
+                        }
+                    }
+                })
+
+            if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                logger.info('Successfully sent email to {0:s} with subject {1:s}'.format(self.CONFIGURATION['EMAIL_TO'],
+                                                                                         subject))
+            else:
+                logger.error('Failed to send email to {0:s} with subject {1:s}'.format(self.CONFIGURATION['EMAIL_TO'],
+                                                                                       subject))
+
         except Exception as e:
             logger.error('Failed to send email to {0:s} with subject {1:s}'.format(self.CONFIGURATION['EMAIL_TO'],
                                                                                    subject),
