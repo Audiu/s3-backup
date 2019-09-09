@@ -123,7 +123,7 @@ class Plan:
             if retcode != 0:
                 raise Exception('Failed with code %d' % retcode)
 
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             logger.error('Failed with code %d : %s', e.returncode, e.output)
             raise
 
@@ -148,7 +148,7 @@ class Plan:
                 try:
                     logger.debug('Adding: %s', file_name)
                     myzip.write(file_name)
-                except Exception, e:
+                except Exception as e:
                     logger.error('Error while adding file to the archive: %s - %s', file_name, e)
                     raise
 
@@ -184,7 +184,7 @@ class Plan:
             else:
                 logger.info('No previous backups require removal')
 
-        except Exception, e:
+        except Exception as e:
             logger.error('Failed to clear out previous backups from S3: %s', e)
             raise
 
@@ -200,7 +200,7 @@ class Plan:
             key = Key(bucket)
             key.key = self.output_file
             key.set_contents_from_filename(self.output_file)
-        except Exception, e:
+        except Exception as e:
             logger.error('Failed to upload backup file to S3: %s', e)
             raise
 
@@ -230,5 +230,5 @@ class Plan:
         try:
             if os.path.isfile(self.output_file):
                 os.remove(self.output_file)
-        except Exception, e:
+        except Exception as e:
             logger.error('Failed to remove temporary file: %s', e)

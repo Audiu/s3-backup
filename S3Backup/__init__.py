@@ -36,7 +36,7 @@ class S3BackupTool:
 
         try:
             self.CONFIGURATION, self.PLANS = config_loader.config_setup(config_file)
-        except Exception, e:
+        except Exception as e:
             logger.fatal('Failed to load configuration: %s', e)
             raise e
 
@@ -54,7 +54,7 @@ class S3BackupTool:
             try:
                 updated, output_file = plan.run()
                 self.__send_success_email(plan, updated, output_file)
-            except Exception, e:
+            except Exception as e:
                 logger.error('Failed to run plan: %s', e)
                 self.__send_failure_email(plan, e)
 
@@ -103,7 +103,7 @@ class S3BackupTool:
                 subject,
                 body,
                 [self.CONFIGURATION['EMAIL_TO']])
-        except Exception, e:
+        except Exception as e:
             logger.error('Failed to send email to {0:s} with subject {1:s}'.format(self.CONFIGURATION['EMAIL_TO'],
                                                                                    subject),
                          e)
