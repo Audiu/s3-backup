@@ -4,9 +4,11 @@ from setuptools import setup, find_packages
 import os
 import subprocess
 
+
 def parse_requirements(filename):
     return list(filter(lambda line: (line.strip())[0] != '#',
                        [line.strip() for line in open(filename).readlines()]))
+
 
 def calculate_version():
     # Get version from tags and write to version.py.
@@ -25,7 +27,6 @@ def calculate_version():
 
 requirements = parse_requirements('requirements.txt')
 version_git = calculate_version()
-
 
 setup(
     name='S3Backup',

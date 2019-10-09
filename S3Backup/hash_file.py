@@ -3,7 +3,8 @@ import os
 from shutil import move
 from tempfile import mkstemp
 
-BLOCKSIZE=65535
+BLOCKSIZE = 65535
+
 
 def find_hash(hash_file, plan_name):
     # Try to find the hash in the hash file
@@ -16,6 +17,7 @@ def find_hash(hash_file, plan_name):
                 return parts[1]
 
     return None
+
 
 def update_hash(hash_file, plan_name, hash_value):
     # Do the update (create the file if it doesn't exist)
@@ -53,6 +55,7 @@ def update_hash(hash_file, plan_name, hash_value):
 
     # Move new file
     move(abs_path, hash_file)
+
 
 def calc_hash(filename):
     hasher = hashlib.md5()

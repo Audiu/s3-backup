@@ -31,6 +31,7 @@ logger = logging.getLogger(name='config_loader')
 required_root_values = ['AWS_KEY', 'AWS_SECRET', 'AWS_BUCKET', 'AWS_REGION', 'HASH_CHECK_FILE', 'Plans']
 optional_root_values = ['EMAIL_FROM', 'EMAIL_TO']
 
+
 def config_setup(config_file):
     logger.info('Loading: %s', config_file)
 

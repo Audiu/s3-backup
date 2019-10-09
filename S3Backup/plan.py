@@ -21,20 +21,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from boto.s3.key import Key
+import boto3
 import glob2
 import logging
 import os
 import subprocess
 from zipfile import ZipFile
 import time
-import boto.ses
 from S3Backup import hash_file
 
 required_plan_values = ['Name', 'Src', 'OutputPrefix']
 optional_plan_values = ['Command', 'PreviousBackupsCount', 'Zip64']
 
 logger = logging.getLogger(name='Plan')
+
 
 class Plan:
 
@@ -117,24 +117,34 @@ class Plan:
         logger.info('Executing custom command...')
 
         try:
+            base_dir = os.path.dirname(__file__)
+            command_path = os.path.join(base_dir, self.command)
+
+            logger.info('Executing %s', command_path)
+
             fnull = open(os.devnull, "w")
-            retcode = subprocess.call(self.command, shell=True, stdout=fnull, stderr=subprocess.STDOUT)
+            retcode = subprocess.call(command_path, shell=True, stdout=fnull, stderr=subprocess.STDOUT)
+
+            logger.info('Process returned code %d', retcode)
 
             if retcode != 0:
                 raise Exception('Failed with code %d' % retcode)
 
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             logger.error('Failed with code %d : %s', e.returncode, e.output)
             raise
 
     def __zip_files(self):
         fileset = []
+
+        base_dir = os.path.dirname(__file__)
+
         if isinstance(self.src, list):
             for src_path in self.src:
-                for filename in glob2.glob(os.path.normpath(src_path)):
+                for filename in glob2.glob(os.path.normpath(os.path.join(base_dir, src_path))):
                     fileset.append(filename)
         else:
-            for filename in glob2.glob(os.path.normpath(self.src)):
+            for filename in glob2.glob(os.path.normpath(os.path.join(base_dir, self.src))):
                 fileset.append(filename)
 
         # Check there are files in the file set
@@ -148,7 +158,7 @@ class Plan:
                 try:
                     logger.debug('Adding: %s', file_name)
                     myzip.write(file_name)
-                except Exception, e:
+                except Exception as e:
                     logger.error('Error while adding file to the archive: %s - %s', file_name, e)
                     raise
 
@@ -156,23 +166,24 @@ class Plan:
 
     def __clear_old_backups(self):
         try:
-            conn = boto.s3.connect_to_region(
-                self.CONFIGURATION['AWS_REGION'],
+            s3_client = boto3.client(
+                's3',
+                region_name=self.CONFIGURATION['AWS_REGION'],
                 aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
-                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
-
-            bucket = conn.get_bucket(self.CONFIGURATION['AWS_BUCKET'])
+                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET']
+            )
 
             backup_keys = []
 
-            for key in bucket.list(prefix=self.output_file_prefix):
-                backup_keys.append(key.name)
+            for key in s3_client.list_objects(Bucket=self.CONFIGURATION['AWS_BUCKET'],
+                                              Prefix=self.output_file_prefix)['Contents']:
+                backup_keys.append(key['Key'])
 
             backup_keys.sort()
 
             logger.info('There are %d previous backups', len(backup_keys))
 
-            max_backups = self.previous_backups_count + 1   # Because this is run after current backup uploaded
+            max_backups = self.previous_backups_count + 1  # Because this is run after current backup uploaded
 
             if len(backup_keys) > max_backups:
                 backups_to_remove = len(backup_keys) - max_backups
@@ -180,27 +191,30 @@ class Plan:
 
                 for i in range(backups_to_remove):
                     logger.info('Removing previous backup: %s', backup_keys[i])
-                    bucket.delete_key(backup_keys[i])
+                    s3_client.delete_object(Bucket=self.CONFIGURATION['AWS_BUCKET'], Key=backup_keys[i])
             else:
                 logger.info('No previous backups require removal')
 
-        except Exception, e:
+        except Exception as e:
             logger.error('Failed to clear out previous backups from S3: %s', e)
             raise
 
     def __upload(self):
         try:
-            conn = boto.s3.connect_to_region(
-                self.CONFIGURATION['AWS_REGION'],
+            s3_client = boto3.client(
+                's3',
+                region_name=self.CONFIGURATION['AWS_REGION'],
                 aws_access_key_id=self.CONFIGURATION['AWS_KEY'],
-                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET'])
+                aws_secret_access_key=self.CONFIGURATION['AWS_SECRET']
+            )
 
-            bucket = conn.get_bucket(self.CONFIGURATION['AWS_BUCKET'])
+            tc = boto3.s3.transfer.TransferConfig()
+            t = boto3.s3.transfer.S3Transfer(client=s3_client,
+                                             config=tc)
 
-            key = Key(bucket)
-            key.key = self.output_file
-            key.set_contents_from_filename(self.output_file)
-        except Exception, e:
+            t.upload_file(self.output_file, self.CONFIGURATION['AWS_BUCKET'], self.output_file)
+
+        except Exception as e:
             logger.error('Failed to upload backup file to S3: %s', e)
             raise
 
@@ -230,5 +244,5 @@ class Plan:
         try:
             if os.path.isfile(self.output_file):
                 os.remove(self.output_file)
-        except Exception, e:
+        except Exception as e:
             logger.error('Failed to remove temporary file: %s', e)

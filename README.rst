@@ -30,6 +30,16 @@ Install using ``pip``:
 
     pip install s3backup
 
+Using ``virtualenv``:
+
+::
+
+    $ mkdir s3backup
+    $ cd s3backup
+    $ python3 -m venv .
+    $ . bin/activate
+    $ pip install -r requirements.txt
+
 Dependencies
 ------------
 
