@@ -21,6 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+import sys
+
 import boto3
 import glob2
 import logging
@@ -117,8 +119,10 @@ class Plan:
         logger.info('Executing custom command...')
 
         try:
-            base_dir = os.path.dirname(__file__)
-            command_path = os.path.join(base_dir, self.command)
+            command_path = self.command
+
+            if self.command[0] is not '/':
+                command_path = os.path.join(sys.path[0], self.command)
 
             logger.info('Executing %s', command_path)
 
@@ -137,14 +141,20 @@ class Plan:
     def __zip_files(self):
         fileset = []
 
-        base_dir = os.path.dirname(__file__)
-
         if isinstance(self.src, list):
             for src_path in self.src:
-                for filename in glob2.glob(os.path.normpath(os.path.join(base_dir, src_path))):
+                normalized_src = os.path.normpath(src_path)
+                if src_path[0] is not '/':
+                    normalized_src = os.path.normpath(os.path.join(sys.path[0], src_path))
+
+                for filename in glob2.glob(normalized_src):
                     fileset.append(filename)
         else:
-            for filename in glob2.glob(os.path.normpath(os.path.join(base_dir, self.src))):
+            normalized_src = os.path.normpath(self.src)
+            if self.src[0] is not '/':
+                normalized_src = os.path.join(sys.path[0], self.src)
+
+            for filename in glob2.glob(normalized_src):
                 fileset.append(filename)
 
         # Check there are files in the file set
